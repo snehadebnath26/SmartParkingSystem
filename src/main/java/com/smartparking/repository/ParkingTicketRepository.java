@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ParkingTicketRepository extends JpaRepository<ParkingTicket, Long> {
+
     Optional<ParkingTicket> findByVehicle_RegistrationNumberAndActiveTrue(
             String registrationNumber);
 

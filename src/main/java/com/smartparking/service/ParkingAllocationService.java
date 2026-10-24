@@ -22,28 +22,29 @@ public class ParkingAllocationService {
 
     @Transactional
     public ParkingSpot allocateSpot(VehicleType vehicleType) {
-        List<ParkingSpot> availableSpots =
-                parkingSpotRepository.findByOccupiedFalseOrderByFloor_FloorNumberAscSpotNumberAsc();
+        List<ParkingSpot> availableSpots = parkingSpotRepository
+                .findByOccupiedFalseOrderByFloor_FloorNumberAscSpotNumberAsc();
 
-        return availableSpots.stream()
+        for (ParkingSpot candidate : availableSpots.stream()
                 .filter(spot -> isCompatible(vehicleType, spot.getSpotType()))
-                .min(Comparator.comparingInt(spot -> spotSize(spot.getSpotType())))
-                .map(spot -> {
-                    ParkingSpot lockedSpot = parkingSpotRepository
-                            .findByIdForUpdate(spot.getId())
-                            .orElseThrow(() -> new IllegalStateException(
-                                    "Parking spot no longer exists"));
+                .sorted(Comparator.comparingInt(
+                        spot -> spotSize(spot.getSpotType())))
+                .toList()) {
 
-                    if (lockedSpot.isOccupied()) {
-                        throw new IllegalStateException(
-                                "Selected spot has already been occupied. Please retry.");
-                    }
+            ParkingSpot lockedSpot = parkingSpotRepository
+                    .findByIdForUpdate(candidate.getId())
+                    .orElse(null);
 
-                    lockedSpot.setOccupied(true);
-                    return parkingSpotRepository.save(lockedSpot);
-                })
-                .orElseThrow(() -> new IllegalStateException(
-                        "No compatible parking spot available"));
+            if (lockedSpot == null || lockedSpot.isOccupied()
+                    || !isCompatible(vehicleType, lockedSpot.getSpotType())) {
+                continue;
+            }
+
+            lockedSpot.setOccupied(true);
+            return parkingSpotRepository.save(lockedSpot);
+        }
+
+        throw new IllegalStateException("No compatible parking spot available");
     }
 
     private boolean isCompatible(VehicleType vehicleType, SpotType spotType) {

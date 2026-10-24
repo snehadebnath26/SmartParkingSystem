@@ -1,7 +1,6 @@
 
 package com.smartparking.service;
 
-import com.smartparking.model.ParkingSpot;
 import com.smartparking.model.ParkingTicket;
 import com.smartparking.model.Vehicle;
 import com.smartparking.model.VehicleType;
